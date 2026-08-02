@@ -1,0 +1,78 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: lead
+      POSTGRES_PASSWORD: lead
+      POSTGRES_DB: lead
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lead -d lead"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  worker:
+    build:
+      context: .
+      dockerfile: packages/worker/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://lead:lead@postgres:5432/lead
+      REDIS_URL: redis://redis:6379
+      STORAGE_DIR: /data/storage
+      LLM_PROVIDER: ${LLM_PROVIDER:-google}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      EXTRACT_MODEL: ${EXTRACT_MODEL:-}
+      PLAN_MODEL: ${PLAN_MODEL:-}
+      TAVILY_API_KEY: ${TAVILY_API_KEY:-}
+      EXA_API_KEY: ${EXA_API_KEY:-}
+      HUNTER_API_KEY: ${HUNTER_API_KEY:-}
+      SCRAPINGBEE_API_KEY: ${SCRAPINGBEE_API_KEY:-}
+      FIRECRAWL_API_KEY: ${FIRECRAWL_API_KEY:-}
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-4}
+      BROWSER_POOL_SIZE: ${BROWSER_POOL_SIZE:-4}
+      MAX_PAGES_PER_DOMAIN: ${MAX_PAGES_PER_DOMAIN:-6}
+      ALLOW_PERSONAL_EMAILS: ${ALLOW_PERSONAL_EMAILS:-false}
+      CONTROL_PORT: 4000
+    volumes:
+      - storage:/data/storage
+    # Published so `npm run dev` on the host can reach the control API. The
+    # endpoint has no auth — bind it to localhost, never 0.0.0.0.
+    ports:
+      - "127.0.0.1:4000:4000"
+    # Chromium's default 64MB /dev/shm causes "Target closed" crashes.
+    shm_size: 1gb
+    # Chromium forks renderers; PID-1 node will not reap them.
+    init: true
+    # Default 10s SIGKILLs mid-crawl.
+    stop_grace_period: 60s
+    mem_limit: 4g
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:
+  storage:
