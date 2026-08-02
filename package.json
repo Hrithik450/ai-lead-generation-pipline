@@ -1,0 +1,24 @@
+{
+  "name": "ai-lead-generation-employee",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "workspaces": [
+    "packages/core",
+    "packages/worker",
+    "packages/web"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=@lead/web",
+    "worker": "npm run dev --workspace=@lead/worker",
+    "build": "npm run build --workspace=@lead/core && npm run build --workspace=@lead/worker && npm run build --workspace=@lead/web",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspace=@lead/worker",
+    "db:migrate": "npm run db:migrate --workspace=@lead/core",
+    "infra:up": "docker compose up -d postgres redis",
+    "infra:down": "docker compose down"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
