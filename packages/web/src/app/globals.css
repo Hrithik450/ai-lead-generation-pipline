@@ -1,0 +1,315 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/*
+ * The paper theme.
+ *
+ * Two licensed faces, declared here rather than through next/font: `public/` is
+ * served as a static asset and is not part of the server bundle, so anything
+ * that probes the filesystem for these files finds nothing and falls back to a
+ * stand-in on every request.
+ *
+ * Palo Compressed Bold reports usWeightClass 400 despite the name, so it is
+ * declared at 400 — asking for 700 makes the browser synthesise a bold on top of
+ * an already-bold face and thickens the strokes unevenly.
+ *
+ * `swap`, not `optional`: optional drops the face for the entire pageview if it
+ * is not cached within ~100ms, so a first-time visitor never sees the real fonts
+ * at all. Both files are preloaded in layout.tsx, which keeps the swap short.
+ */
+@font-face {
+  font-family: "Palo";
+  src: url("/fonts/Palo-CompressedBold.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Banda Nova";
+  src: url("/fonts/BandaNova-Book.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-ink: var(--ink);
+  --color-cream: var(--cream);
+  --color-blue: var(--blue);
+  --color-green: var(--green);
+  --color-red: var(--red);
+  --color-yellow: var(--yellow);
+  --color-sky: var(--sky);
+
+  --font-sans: var(--font-caption);
+  --font-heading: var(--font-heading);
+  --font-mono: var(--font-mono);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+}
+
+/*
+ * The palette sits on bare :root rather than under a `.paper` wrapper. earn
+ * scopes it because its /admin panel has to stay on stock shadcn neutral; this
+ * product is a dashboard and nothing else, so there is no second theme to keep
+ * out of the way.
+ *
+ * shadcn's own semantic tokens are remapped onto the paper colours below, which
+ * is what makes an unmodified <Button> or <Input> come out inked rather than
+ * grey. Anything pulled from the registry later inherits the theme for free.
+ */
+:root {
+  --cream: #f9f3ee;
+  --ink: #14120e;
+  --blue: #2f4fe0;
+  --green: #1e9e5a;
+  --red: #e8442c;
+  /* Decorative only: this yellow fails contrast as a data colour, so it appears
+     exclusively as a fill behind black text. */
+  --yellow: #f2c318;
+  --sky: #a8d5f2;
+
+  --font-heading: "Palo", "Anton", Impact, sans-serif;
+  --font-caption: "Banda Nova", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+
+  --background: #ffffff;
+  --foreground: var(--ink);
+  --card: #ffffff;
+  --card-foreground: var(--ink);
+  --popover: #ffffff;
+  --popover-foreground: var(--ink);
+  --primary: var(--ink);
+  --primary-foreground: #ffffff;
+  --secondary: var(--cream);
+  --secondary-foreground: var(--ink);
+  --muted: var(--cream);
+  --muted-foreground: #636363;
+  --accent: var(--cream);
+  --accent-foreground: var(--ink);
+  --destructive: var(--red);
+  /* Borders are the theme's defining feature, so the shared token is full-
+     strength ink rather than shadcn's hairline grey. Width comes from the
+     component; every keyline in the product is 2px. */
+  --border: var(--ink);
+  --input: var(--ink);
+  --ring: var(--blue);
+
+  --radius: 0.85rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Palo Compressed Bold is genuinely condensed so it needs no added tracking, but
+   its space glyph is proportionally much tighter than its letterforms — word
+   gaps are opened manually or a heading reads as one run-on word.
+
+   In @layer base so a `leading-*` utility can still win. Unlayered rules beat
+   every layered one in Tailwind v4 regardless of specificity, so left outside a
+   layer this line-height would silently override every utility on every h1-h3. */
+@layer base {
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-heading);
+    font-weight: 400;
+    letter-spacing: 0;
+    line-height: 1.06;
+    word-spacing: 0.09em;
+  }
+}
+
+/* Everything below is in @layer components for the same reason the heading rule
+   above is in @layer base: an unlayered rule beats every Tailwind utility no
+   matter how specific the utility is. Left outside a layer, `.ink-input`'s
+   padding silently overrode `py-0` at every call site and forced 46px of content
+   into a 40px control. Layered, a utility on the element still wins. */
+@layer components {
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* Captions, sub-heads and body copy all sit in the same grey rather than a tint
+   of the ink, which reads flatter and more printed. */
+.caption {
+  color: var(--muted-foreground);
+}
+
+/* For headline treatment on an element that is not an h1/h2/h3 — the logo. */
+.display {
+  font-family: var(--font-heading);
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+/* The card: thick keyline, generous radius, hard offset shadow. No blur
+   anywhere — the shadow is a flat stamped duplicate, which is what makes the
+   page read as printed rather than as a soft UI.
+
+   The offset falls to the LEFT and down. Every shadow in the product shares that
+   direction — a single light source high on the right — so the negative x here
+   is repeated on .ink-lift, .btn-ink and the stickers. */
+.ink-card {
+  border: 2px solid var(--ink);
+  border-radius: 1.25rem;
+  background: #ffffff;
+  box-shadow: -3px 3px 0 0 var(--ink);
+}
+
+.ink-lift {
+  transition:
+    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Lifts away from its shadow — up and to the right, since the shadow sits
+   bottom-left. */
+.ink-lift:hover {
+  transform: translate(1px, -1px);
+  box-shadow: -5px 5px 0 0 var(--ink);
+}
+
+/* The sticker: a small pill, always ink text on a bright fill or white on a
+   dark one. Every status in the product is one of these. */
+.sticker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 0.15rem 0.65rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--ink);
+}
+
+.btn-ink {
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  font-weight: 800;
+  box-shadow: -2px 2px 0 0 var(--ink);
+  transition:
+    transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.btn-ink:hover:not(:disabled) {
+  transform: translate(1px, -1px);
+  box-shadow: -4px 4px 0 0 var(--ink);
+}
+
+/* Pressed: sinks toward the shadow's corner, so the offset all but closes. */
+.btn-ink:active:not(:disabled) {
+  transform: translate(-1px, 1px);
+  box-shadow: -1px 1px 0 0 var(--ink);
+}
+
+.btn-ink:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: -2px 2px 0 0 var(--ink);
+}
+
+/* The nav is a cream slab pinned to the top of the white page, rounded only on
+   its bottom corners so it reads as a sheet laid over the sheet below. The
+   keyline is on the bottom edge alone; with no side borders to meet, it tapers
+   out as it follows the two corner curves. */
+.nav-pill {
+  background: var(--cream);
+  border-bottom: 2px solid var(--ink);
+  border-bottom-left-radius: 2rem;
+  border-bottom-right-radius: 2rem;
+}
+
+/* Form fields inherit the keyline treatment rather than shadcn's soft border,
+   otherwise inputs are the one place the printed illusion breaks. */
+.ink-input {
+  border: 2px solid var(--ink);
+  border-radius: 0.85rem;
+  background: #ffffff;
+  padding: 0.7rem 0.95rem;
+  font-family: var(--font-caption);
+  width: 100%;
+  outline: none;
+  transition: box-shadow 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.ink-input:focus,
+.ink-input:focus-visible {
+  box-shadow: -3px 3px 0 0 var(--blue);
+}
+
+.ink-input::placeholder {
+  color: rgba(99, 99, 99, 0.7);
+}
+
+/* A select gets the same keyline box as an input, minus the OS chrome, plus a
+   drawn chevron. Without appearance:none the native control keeps its own
+   border and rounding on Safari and the field stops matching the ones above and
+   below it. Right padding leaves room for the arrow. */
+.ink-select {
+  appearance: none;
+  padding-right: 2.4rem;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%2314120e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.95rem center;
+  background-size: 0.75rem;
+}
+}
+
+/* One focus rule for everything that does not draw its own. The ring is blue
+   rather than ink so it reads against both the white page and the cream slabs. */
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
