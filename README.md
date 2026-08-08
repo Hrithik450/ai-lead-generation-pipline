@@ -1,8 +1,8 @@
-# AI Lead Generation Pipeline
+# AI Lead Generation Engine
 
-> Describe an ideal customer in plain English. Get scored, exportable company leads — with emails, phones, and firmographics — from a crawl that you approve before it spends.
+> Describe an ideal customer in plain English. The system turns it into a reviewed search plan, finds matching companies, extracts useful details from their websites, and returns scored leads.
 
-An autonomous lead-generation employee: it **plans**, **discovers**, **fetches**, **extracts**, **scores**, and **exports** B2B leads through a human approval gate.
+An AI-powered lead generation system that combines planning, search, scraping, extraction, scoring, and export in one workflow, with a human approval gate before crawl spend.
 
 <p align="center">
   <img src="assets/system-architecture.png" alt="System architecture" width="920" />
@@ -21,7 +21,7 @@ An autonomous lead-generation employee: it **plans**, **discovers**, **fetches**
 
 ## Why this exists
 
-Most lead tools either dump noisy lists or scrape blindly. This pipeline treats lead gen like an operator:
+Most lead tools either return noisy lists or scrape blindly. This system is designed to behave more like an operator:
 
 1. **Interpret** your ICP in natural language  
 2. **Propose** a search plan you can approve or reject  
@@ -30,9 +30,21 @@ Most lead tools either dump noisy lists or scrape blindly. This pipeline treats 
 5. **Extract** firmographics + contacts (deterministic first, LLM when needed)  
 6. **Score & dedupe** so exports are usable, not raw crawl residue  
 
+### In practice
+
+1. A user describes the target customer in plain English
+2. The system creates a search plan and waits for approval
+3. After approval, it discovers company domains, extracts lead data, and returns ranked results
+
 ---
 
 ## Architecture
+
+At a high level, the system is split into three parts:
+
+- **Web app**: the dashboard where a user starts runs, approves plans, and reviews leads
+- **Worker**: the background process that plans, discovers, scrapes, extracts, and scores
+- **Storage & queue**: Postgres stores state, and Redis manages background jobs
 
 ```
 ┌─────────────┐     ┌──────────────┐     ┌────────────────────────────┐
@@ -65,7 +77,7 @@ Most lead tools either dump noisy lists or scrape blindly. This pipeline treats 
 
 ---
 
-## Features
+## What it does
 
 - **Natural-language ICP** — “Series A AI startups in Germany with 20–100 employees…”
 - **Approval gate** — plan + search queries visible before crawl spend
@@ -81,6 +93,13 @@ Most lead tools either dump noisy lists or scrape blindly. This pipeline treats 
 
 ## Quick start
 
+This project runs as:
+
+- `web` on `localhost:3000`
+- `worker` on `127.0.0.1:4000`
+- `postgres` on `localhost:5432`
+- `redis` on `localhost:6379`
+
 ### Prerequisites
 
 - Node.js **20+**
@@ -89,15 +108,19 @@ Most lead tools either dump noisy lists or scrape blindly. This pipeline treats 
 
 ### 1. Install & configure
 
+Clone the repo, install dependencies, and add your API keys:
+
 ```bash
-git clone https://github.com/Hrithik450/ai-lead-generation-pipline.git
-cd ai-lead-generation-pipline
+git clone https://github.com/Hrithik450/ai-lead-generation-employee.git
+cd ai-lead-generation-employee
 npm install
 cp .env.example .env
 # fill in GOOGLE_API_KEY (or OpenAI/Anthropic) + TAVILY_API_KEY and/or EXA_API_KEY
 ```
 
 ### 2. Start infrastructure
+
+Start Postgres and Redis, then apply the schema:
 
 ```bash
 npm run infra:up
@@ -106,15 +129,21 @@ npm run db:migrate
 
 ### 3. Run worker + UI
 
+Start the background worker and the web app in separate terminals:
+
 ```bash
-# terminal 1 — crawl / extract worker + control API
+# terminal 1 — background worker + control API
 npm run worker
 
 # terminal 2 — operator dashboard
 npm run dev
 ```
 
-Open the web app (default Next.js port) → describe a customer → approve the plan → watch leads arrive.
+Then open `http://localhost:3000` and:
+
+1. describe the kind of company you want to find
+2. review and approve the generated plan
+3. watch domains, progress, and leads appear live in the dashboard
 
 ---
 
@@ -148,6 +177,8 @@ Full comments and defaults live in [`.env.example`](.env.example).
 ---
 
 ## Pipeline stages
+
+The run lifecycle is:
 
 1. **Plan** — LLM turns the brief into requirements + search queries  
 2. **Discover** — search providers return candidate domains  
